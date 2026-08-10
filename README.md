@@ -9,17 +9,20 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 3 done — Jarvis can research the web and edit code.**
+> **Status: Phase 4 done — Jarvis can research, code, control the computer,
+> and see the screen.**
 > `core`, `security` (incl. a sandboxed subprocess executor), `memory`,
 > `brain` (Claude-backed LLM router, tool registry, and a real agentic
 > tool-use loop), `agents` (Coordinator/Planner/Reasoning for chat, plus
-> Research/Coding agents that actually call tools), `system` (sandboxed
-> shell + workspace-confined file ops), and `web` (fetch + search, no API
-> key required) are implemented and tested (182 tests, `ruff`/`mypy
-> --strict` clean). `WS /ws/chat` works end to end with `ANTHROPIC_API_KEY`
-> set. Everything else in `ARCHITECTURE.md` is designed but not yet built —
-> see `ROADMAP.md` for build order and what's next (Phase 4: `automation` +
-> `vision`).
+> Research/Coding/Automation/Vision agents that actually call tools),
+> `system` (sandboxed shell + workspace-confined file ops), `web` (fetch +
+> search, no API key required), `automation` (process management,
+> clipboard, notifications, keyboard/mouse control), and `vision` (OCR,
+> image analysis, screen capture, window detection) are implemented and
+> tested (226 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` works end
+> to end with `ANTHROPIC_API_KEY` set. Everything else in `ARCHITECTURE.md`
+> is designed but not yet built — see `ROADMAP.md` for build order and
+> what's next (Phase 5: `voice`).
 
 ## Repository layout
 

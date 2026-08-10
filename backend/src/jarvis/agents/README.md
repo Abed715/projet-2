@@ -1,10 +1,10 @@
 # jarvis.agents
 
-**Status:** implemented (Phase 2 chat agents + Phase 3 tool-using agents).
-Depends on `jarvis.brain`, and on `jarvis.web`/`jarvis.system` for what the
-Research/Coding agents' tools do (those modules register the tools into
-the `ToolRegistry` an agent's caller passes in — this module doesn't import
-`web`/`system` itself).
+**Status:** implemented (Phase 2 chat agents + Phase 3/4 tool-using agents).
+Depends on `jarvis.brain`, and on `jarvis.web`/`jarvis.system`/
+`jarvis.automation`/`jarvis.vision` for what the tool-using agents' tools
+do (those modules register the tools into the `ToolRegistry` an agent's
+caller passes in — this module doesn't import them itself).
 
 ## Public interface
 
@@ -14,6 +14,7 @@ from jarvis.agents import (
     ToolAgent, ToolAgentReply,                  # tool-using agent wrapper
     create_coordinator, create_planner, create_reasoning_agent,   # chat agents
     create_research_agent, create_coding_agent,                   # tool-using agents
+    create_automation_agent, create_vision_agent,                 # tool-using agents
 )
 ```
 
@@ -43,6 +44,14 @@ from jarvis.agents import (
   "Repo-scoped" means confined to the workspace directory `system`'s
   services were constructed against, not a separate sandbox this module
   adds.
+- **`create_automation_agent`** — process/clipboard/notification/input
+  control. Scoped to `automation`'s tools (`agents.automation.ALLOWED_TOOLS`)
+  — it cannot read files, run shell commands, or use `web`/`vision` tools.
+- **`create_vision_agent`** — screen/image understanding: screenshots,
+  window listing, OCR, basic image metadata. Scoped to `vision`'s tools
+  (`agents.vision.ALLOWED_TOOLS`). Read-only by design — it cannot control
+  the mouse/keyboard (that's `automation`'s job) or detect objects/scenes
+  (not implemented in `vision` yet).
 
 Chat-agent factories take a `ConversationEngine` and an optional
 `provider_name` (defaults to `"anthropic"`). Tool-agent factories take the
@@ -66,7 +75,7 @@ talks to `messages.create` directly, see `brain/tool_runner.py`) and a
   tool call — neither is needed yet. Unifying them is deferred until an
   agent actually needs both (multi-turn memory *and* tools) — likely when
   Coordinator gains delegation.
-- Memory, Automation, Security, and Vision agents (ARCHITECTURE.md §7) are
-  deferred until the domain modules they wrap (`automation`, `vision`)
-  exist (Phase 4), or until there's a concrete consumer for a
-  memory-specific or security-specific agent.
+- Memory and Security agents (ARCHITECTURE.md §7) are deferred until there's
+  a concrete consumer for a memory-specific or security-specific agent —
+  unlike Automation/Vision, neither wraps a domain module that didn't exist
+  yet, so there's no phase forcing the question.

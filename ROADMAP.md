@@ -10,7 +10,7 @@ previous phase's modules have tests passing in CI.
 | 1 | `security` spine, Postgres/Redis, `memory` (short-term + episodic + semantic) | ✅ Done |
 | 2 | `brain` (LLM router, tool registry), `agents` (Coordinator, Planner, Reasoning), `/ws/chat` | ✅ Done |
 | 3 | `system`, `web`, Research Agent, Coding Agent | ✅ Done |
-| 4 | `automation`, `vision`, Automation Agent, Vision Agent | ⬜ Not started |
+| 4 | `automation`, `vision`, Automation Agent, Vision Agent | ✅ Done |
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ⬜ Not started |
 | 6 | `tasks` (queue/workers/scheduler), `plugins` | ⬜ Not started |
 | 7 | `frontend` dashboard, `desktop` Electron shell | ⬜ Not started |
@@ -121,6 +121,44 @@ resuming a `ToolRunner` loop after a pending confirmation is granted (needs
 the task engine's pause/resume, Phase 6), and process management
 (open/close applications — waits on `automation`'s OS-level primitives,
 Phase 4).
+
+## Phase 4 checklist
+
+- [x] `automation` module implemented: `ProcessService` (open/close/list
+      processes via `psutil`/`subprocess`, headless-safe — no backend
+      Protocol needed), `ClipboardService`/`NotificationService`/
+      `InputService` each over a swappable backend Protocol (real backend —
+      `pyperclip`/`notify-send`/`pyautogui` — lazily constructed or called,
+      translating headless failures into `ConfigurationError`),
+      `register_automation_tools` (`list_processes`/`send_notification`
+      `SAFE`, `clipboard_read`/`clipboard_write`/`mouse_move` `SENSITIVE`,
+      `open_application`/`close_application`/`mouse_click`/`type_text`/
+      `press_key` `DANGEROUS`) — with unit tests
+- [x] `vision` module implemented: `OcrService` (`pytesseract` + Pillow,
+      real headless OCR, verified against the `tesseract-ocr` system
+      package), `ImageAnalysisService` (Pillow: dimensions, format, average
+      color), `ScreenCaptureService`/`WindowDetectionService` each over a
+      swappable backend Protocol (real backend — `mss`/`wmctrl` — lazily
+      constructed, translating headless/missing-binary failures into
+      `ConfigurationError`), `register_vision_tools` (`extract_text`/
+      `analyze_image` `SAFE`, `capture_screen`/`list_windows` `SENSITIVE`)
+      — with unit tests, including real OCR/image-analysis round-trips
+      against synthetically generated images (no fakes needed there — both
+      are headless-safe)
+- [x] `agents` extended: `create_automation_agent` (scoped to
+      `automation`'s tools), `create_vision_agent` (scoped to `vision`'s
+      tools, read-only by design) — with unit tests
+- [x] CI extended: installs the `tesseract-ocr` system package before
+      running tests
+
+Deferred out of Phase 4: object detection and webcam/live camera input
+(no CV model or capture-device dependency has been added yet — see
+`vision/README.md`), macOS/Windows backends for clipboard/input/
+notifications/window-detection beyond what `pyperclip`/`pyautogui` already
+handle cross-platform (Linux/X11 is the only target verified so far — see
+`automation/README.md` and `vision/README.md`), and reaping child processes
+spawned by `open_application` (no task-engine process tracking yet, Phase
+6).
 
 ## Definition of done (every phase)
 

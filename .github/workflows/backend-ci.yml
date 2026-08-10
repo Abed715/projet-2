@@ -56,6 +56,9 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/pyproject.toml
 
+      - name: Install system dependencies (OCR)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr
+
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
