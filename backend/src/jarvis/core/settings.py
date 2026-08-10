@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     default_llm_provider: str = "anthropic"
     anthropic_model: str = "claude-opus-5"
 
+    # --- Voice (STT/TTS, Phase 5) ---
+    whisper_model_size: str = "small"
+    piper_voice_model_path: Path | None = None
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:

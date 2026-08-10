@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import Awaitable, Callable
 from typing import cast
@@ -16,6 +17,7 @@ from jarvis.brain.conversation import ConversationEngine
 from jarvis.brain.providers.claude import ClaudeProvider
 from jarvis.brain.router import LLMRouter
 from jarvis.core import (
+    ConfigurationError,
     JarvisError,
     NotFoundError,
     PermissionDeniedError,
@@ -28,6 +30,7 @@ from jarvis.core import (
 )
 from jarvis.core.logging import reset_correlation_id, set_correlation_id
 from jarvis.memory.short_term import RedisLike, ShortTermMemory
+from jarvis.voice import FasterWhisperSTTProvider, PiperTTSProvider, VoicePipeline
 
 logger = get_logger(__name__)
 
@@ -68,13 +71,50 @@ def _build_default_coordinator(settings: Settings) -> Agent:
     return create_coordinator(engine, provider_name="anthropic")
 
 
-def create_app(*, coordinator: Agent | None = None) -> FastAPI:
+def _build_default_voice_pipeline(settings: Settings, coordinator: Agent) -> VoicePipeline:
+    """Wire the real, Whisper/Piper-backed voice pipeline from process
+    settings.
+
+    Unlike `_build_default_coordinator`, this is never called eagerly at
+    `create_app()` time — loading real STT/TTS models is a genuine,
+    possibly network-touching, multi-second-plus operation (see
+    `voice/README.md`), not a lazy client handle like `anthropic`'s or
+    Redis's. It's built once, lazily, on the first `/ws/voice` connection
+    (see `create_app`'s `_get_voice_pipeline`), so `create_app()` itself —
+    and every test that never opens `/ws/voice` — stays fast and offline.
+    """
+    if settings.piper_voice_model_path is None:
+        raise ConfigurationError("JARVIS_PIPER_VOICE_MODEL_PATH is not configured")
+
+    try:
+        from faster_whisper import WhisperModel
+        from piper import PiperVoice
+
+        whisper_model = WhisperModel(settings.whisper_model_size)
+        piper_voice = PiperVoice.load(settings.piper_voice_model_path)
+    except ConfigurationError:
+        raise
+    except Exception as exc:
+        raise ConfigurationError("failed to load voice models") from exc
+
+    return VoicePipeline(
+        stt=FasterWhisperSTTProvider(whisper_model),
+        tts=PiperTTSProvider(piper_voice),
+        coordinator=coordinator,
+    )
+
+
+def create_app(
+    *, coordinator: Agent | None = None, voice_pipeline: VoicePipeline | None = None
+) -> FastAPI:
     """Build and configure the FastAPI application.
 
     `coordinator` is a dependency-injection seam: omit it in production to
     get the real Claude-backed Coordinator built from process settings, or
     pass a fake `Agent` in tests to exercise `/ws/chat` with no network
-    calls and no real Redis server.
+    calls and no real Redis server. `voice_pipeline` is the same seam for
+    `/ws/voice`: omit it in production to lazily build the real Whisper/
+    Piper-backed pipeline on first connection, or pass a fake in tests.
     """
     settings = get_settings()
     configure_logging(level=settings.log_level, json_format=settings.is_production)
@@ -131,5 +171,41 @@ def create_app(*, coordinator: Agent | None = None) -> FastAPI:
                 await websocket.send_text(reply.content)
         except WebSocketDisconnect:
             logger.info("chat websocket disconnected session_id=%s", session_id)
+
+    # Lazily built and cached on first `/ws/voice` connection — see
+    # `_build_default_voice_pipeline`'s docstring for why this isn't built
+    # eagerly like `resolved_coordinator` above.
+    _voice_pipeline_lock = asyncio.Lock()
+    _voice_pipeline_box: list[VoicePipeline] = (
+        [voice_pipeline] if voice_pipeline is not None else []
+    )
+
+    async def _get_voice_pipeline() -> VoicePipeline:
+        if _voice_pipeline_box:
+            return _voice_pipeline_box[0]
+        async with _voice_pipeline_lock:
+            if not _voice_pipeline_box:
+                _voice_pipeline_box.append(
+                    _build_default_voice_pipeline(settings, resolved_coordinator)
+                )
+            return _voice_pipeline_box[0]
+
+    @app.websocket("/ws/voice")
+    async def voice_websocket(websocket: WebSocket) -> None:
+        session_id = str(uuid.uuid4())
+        await websocket.accept()
+        try:
+            pipeline = await _get_voice_pipeline()
+        except ConfigurationError as exc:
+            logger.warning("voice pipeline unavailable: %s", exc.message)
+            await websocket.close(code=1011, reason="voice not configured")
+            return
+        try:
+            while True:
+                audio_in = await websocket.receive_bytes()
+                result = await pipeline.handle_turn(session_id, audio_in)
+                await websocket.send_bytes(result.audio)
+        except WebSocketDisconnect:
+            logger.info("voice websocket disconnected session_id=%s", session_id)
 
     return app

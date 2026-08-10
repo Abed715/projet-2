@@ -9,20 +9,22 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 4 done — Jarvis can research, code, control the computer,
-> and see the screen.**
+> **Status: Phase 5 done — Jarvis can research, code, control the
+> computer, see the screen, and talk.**
 > `core`, `security` (incl. a sandboxed subprocess executor), `memory`,
 > `brain` (Claude-backed LLM router, tool registry, and a real agentic
 > tool-use loop), `agents` (Coordinator/Planner/Reasoning for chat, plus
 > Research/Coding/Automation/Vision agents that actually call tools),
 > `system` (sandboxed shell + workspace-confined file ops), `web` (fetch +
 > search, no API key required), `automation` (process management,
-> clipboard, notifications, keyboard/mouse control), and `vision` (OCR,
-> image analysis, screen capture, window detection) are implemented and
-> tested (226 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` works end
-> to end with `ANTHROPIC_API_KEY` set. Everything else in `ARCHITECTURE.md`
-> is designed but not yet built — see `ROADMAP.md` for build order and
-> what's next (Phase 5: `voice`).
+> clipboard, notifications, keyboard/mouse control), `vision` (OCR, image
+> analysis, screen capture, window detection), and `voice` (Whisper STT,
+> Piper TTS, wake-word detection) are implemented and tested (240 tests,
+> `ruff`/`mypy --strict` clean). `WS /ws/chat` works end to end with
+> `ANTHROPIC_API_KEY` set; `WS /ws/voice` works once
+> `JARVIS_PIPER_VOICE_MODEL_PATH` is set. Everything else in
+> `ARCHITECTURE.md` is designed but not yet built — see `ROADMAP.md` for
+> build order and what's next (Phase 6: `tasks` + `plugins`).
 
 ## Repository layout
 
@@ -50,7 +52,10 @@ cp ../.env.example ../.env   # fill in as needed
 pytest                        # run the test suite
 uvicorn jarvis.api.app:create_app --factory --reload
 # -> GET http://localhost:8000/health
-# -> WS  ws://localhost:8000/ws/chat  (needs ANTHROPIC_API_KEY in .env to get real replies)
+# -> WS  ws://localhost:8000/ws/chat   (needs ANTHROPIC_API_KEY in .env to get real replies)
+# -> WS  ws://localhost:8000/ws/voice  (needs JARVIS_PIPER_VOICE_MODEL_PATH in .env, plus
+#                                        ANTHROPIC_API_KEY for the reply — otherwise closes
+#                                        with code 1011 "voice not configured")
 ```
 
 ## Full stack (once later phases land)

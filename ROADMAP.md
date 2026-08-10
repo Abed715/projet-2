@@ -11,7 +11,7 @@ previous phase's modules have tests passing in CI.
 | 2 | `brain` (LLM router, tool registry), `agents` (Coordinator, Planner, Reasoning), `/ws/chat` | ✅ Done |
 | 3 | `system`, `web`, Research Agent, Coding Agent | ✅ Done |
 | 4 | `automation`, `vision`, Automation Agent, Vision Agent | ✅ Done |
-| 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ⬜ Not started |
+| 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ✅ Done |
 | 6 | `tasks` (queue/workers/scheduler), `plugins` | ⬜ Not started |
 | 7 | `frontend` dashboard, `desktop` Electron shell | ⬜ Not started |
 | 8 | Hardening: perf, e2e tests, CI/CD image publishing, deployment docs | ⬜ Not started |
@@ -159,6 +159,41 @@ handle cross-platform (Linux/X11 is the only target verified so far — see
 `automation/README.md` and `vision/README.md`), and reaping child processes
 spawned by `open_application` (no task-engine process tracking yet, Phase
 6).
+
+## Phase 5 checklist
+
+- [x] `core` extended: `whisper_model_size` (default `"small"`) and
+      `piper_voice_model_path` (default unset) settings
+- [x] `voice` module implemented: `STTProvider`/`TTSProvider` protocols
+      (mirrors `brain.providers.base.LLMProvider`'s provider-abstraction
+      pattern), `FasterWhisperSTTProvider`/`PiperTTSProvider` (real
+      adapters over `faster_whisper`/`piper`, constructed from an
+      already-loaded model — never loaded by the provider itself, so unit
+      tests never download real model weights), `WakeWordDetector`
+      protocol + `OpenWakeWordDetector` (same already-loaded-model
+      pattern, over `openwakeword`), `VoicePipeline` (non-streaming
+      transcribe → `ConversationalAgent.respond` → synthesize turn,
+      analogous to how `/ws/chat` composes `ConversationEngine`) — with
+      unit tests against fake model/coordinator doubles
+- [x] `api` extended: `WS /ws/voice` (binary audio in, binary audio out,
+      one connection is one session — same model as `/ws/chat`), lazily
+      builds the real `VoicePipeline` on first connection instead of at
+      `create_app()` time (loading real STT/TTS models is a genuine
+      network/CPU-heavy operation, unlike the coordinator's lazy client
+      handles), closes cleanly with code `1011` /
+      `"voice not configured"` when `JARVIS_PIPER_VOICE_MODEL_PATH` isn't
+      set — with unit tests against a fake `VoicePipeline`
+
+Deferred out of Phase 5: streaming partial transcripts, voice activity
+detection (VAD) for automatic end-of-utterance, barge-in/interrupt
+(stopping TTS playback when the user starts talking again), emotion
+tagging, and wiring `OpenWakeWordDetector` into `/ws/voice` or any
+always-listening loop (continuous wake-word listening needs a persistent
+audio-frame stream and activation state machine that belongs in a client —
+the Electron shell, Phase 7 — not the request/reply backend endpoint; see
+`voice/README.md`). Also deferred: an ElevenLabs `TTSProvider` adapter
+(optional cloud alternative to Piper per ARCHITECTURE.md §4, add when
+higher voice quality is actually needed).
 
 ## Definition of done (every phase)
 
