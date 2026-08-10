@@ -9,13 +9,15 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 1 done.** `core` (settings/logging/DI/event bus/DB/Redis
-> helpers), `security` (RBAC, permission engine, audit log, secrets vault),
-> `memory` (short-term/episodic/semantic), and a minimal `api` health-check
-> service are implemented and tested (84 tests, `ruff`/`mypy --strict`
-> clean). Everything else in `ARCHITECTURE.md` is designed but not yet
-> built — see `ROADMAP.md` for build order and what's next (Phase 2: `brain`
-> + `agents` + real conversations).
+> **Status: Phase 2 done — real conversations work.** `core`, `security`,
+> `memory`, `brain` (Claude-backed LLM router, tool registry, conversation
+> engine), and `agents` (Coordinator, Planner, Reasoning) are implemented
+> and tested (111 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` is a
+> working streaming-chat endpoint — connect, send text, get a reply from
+> Claude with per-connection conversation memory. Everything else in
+> `ARCHITECTURE.md` is designed but not yet built — see `ROADMAP.md` for
+> build order and what's next (Phase 3: `system` + `web` + Research/Coding
+> agents).
 
 ## Repository layout
 
@@ -43,6 +45,7 @@ cp ../.env.example ../.env   # fill in as needed
 pytest                        # run the test suite
 uvicorn jarvis.api.app:create_app --factory --reload
 # -> GET http://localhost:8000/health
+# -> WS  ws://localhost:8000/ws/chat  (needs ANTHROPIC_API_KEY in .env to get real replies)
 ```
 
 ## Full stack (once later phases land)

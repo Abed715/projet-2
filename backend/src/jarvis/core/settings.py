@@ -57,6 +57,7 @@ class Settings(BaseSettings):
         "http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
     )
     default_llm_provider: str = "anthropic"
+    anthropic_model: str = "claude-opus-5"
 
     @field_validator("cors_origins", mode="before")
     @classmethod

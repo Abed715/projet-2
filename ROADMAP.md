@@ -8,7 +8,7 @@ previous phase's modules have tests passing in CI.
 |---|---|---|
 | 0 | Repo scaffolding, `core`, minimal `api` boot | ✅ Done |
 | 1 | `security` spine, Postgres/Redis, `memory` (short-term + episodic + semantic) | ✅ Done |
-| 2 | `brain` (LLM router, tool registry), `agents` (Coordinator, Planner, Reasoning), `/ws/chat` | ⬜ Not started |
+| 2 | `brain` (LLM router, tool registry), `agents` (Coordinator, Planner, Reasoning), `/ws/chat` | ✅ Done |
 | 3 | `system`, `web`, Research Agent, Coding Agent | ⬜ Not started |
 | 4 | `automation`, `vision`, Automation Agent, Vision Agent | ⬜ Not started |
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ⬜ Not started |
@@ -55,6 +55,32 @@ schema has shipped to a real environment yet to migrate from), the
 knowledge graph (needs an extraction step from `brain`/`agents` to populate
 it — see `memory/README.md`), and the Sandbox Executor (nothing to sandbox
 until `system` lands in Phase 3).
+
+## Phase 2 checklist
+
+- [x] `core` extended: `anthropic_model` setting (default `claude-opus-5`)
+- [x] `brain` module implemented: `LLMProvider` protocol + `ClaudeProvider`
+      adapter (non-streaming `anthropic.AsyncAnthropic`, tested with a fake
+      client double — no real network calls), `LLMRouter` (named provider
+      registry), `ToolRegistry` (wires tool calls through
+      `security.PermissionEngine` + `AuditLog` — no domain tools registered
+      yet, Phase 3+), `ConversationEngine` (assembles history from
+      `ShortTermMemory`, calls the routed provider, persists both turns) —
+      with unit tests
+- [x] `agents` module implemented: `Agent` (system prompt + provider name
+      over `ConversationEngine`), `create_coordinator` / `create_planner` /
+      `create_reasoning_agent` factories — with unit tests
+- [x] `api`: `WS /ws/chat` — one connection is one session; wired to the
+      Coordinator with a DI seam (`create_app(coordinator=...)`) so tests
+      never hit real Redis/Anthropic — with unit tests
+
+Deferred out of Phase 2: OpenAI/Ollama provider adapters (Claude ships
+first per ARCHITECTURE.md §4; same `LLMProvider` interface, add when
+needed), streaming token-by-token replies over `/ws/chat` (current wire
+format is whole-message request/reply — the simplest thing that proves the
+stack end to end), and Research/Coding/Memory/Automation/Security/Vision
+agents (each wraps a domain module — `web`/`system`/`automation`/`vision`
+— that doesn't exist until Phases 3-4).
 
 ## Definition of done (every phase)
 
