@@ -9,10 +9,13 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 0 — foundation.** The repo scaffolding, the `core` module
-> (settings/logging/DI/event bus), and a minimal `api` health-check service
-> are implemented and tested. Everything else in `ARCHITECTURE.md` is
-> designed but not yet built — see `ROADMAP.md` for build order.
+> **Status: Phase 1 done.** `core` (settings/logging/DI/event bus/DB/Redis
+> helpers), `security` (RBAC, permission engine, audit log, secrets vault),
+> `memory` (short-term/episodic/semantic), and a minimal `api` health-check
+> service are implemented and tested (84 tests, `ruff`/`mypy --strict`
+> clean). Everything else in `ARCHITECTURE.md` is designed but not yet
+> built — see `ROADMAP.md` for build order and what's next (Phase 2: `brain`
+> + `agents` + real conversations).
 
 ## Repository layout
 

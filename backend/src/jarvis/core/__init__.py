@@ -4,6 +4,7 @@ See README.md for the full public interface and design notes.
 """
 
 from jarvis.core.container import Container
+from jarvis.core.db import Base, Database
 from jarvis.core.events import Event, EventBus, InMemoryEventBus
 from jarvis.core.exceptions import (
     ConfigurationError,
@@ -13,10 +14,13 @@ from jarvis.core.exceptions import (
     ValidationError,
 )
 from jarvis.core.logging import configure_logging, get_correlation_id, get_logger
+from jarvis.core.redis import create_redis_client
 from jarvis.core.settings import Settings, get_settings
 
 __all__ = [
+    "Base",
     "Container",
+    "Database",
     "Event",
     "EventBus",
     "InMemoryEventBus",
@@ -26,6 +30,7 @@ __all__ = [
     "PermissionDeniedError",
     "ValidationError",
     "configure_logging",
+    "create_redis_client",
     "get_correlation_id",
     "get_logger",
     "Settings",

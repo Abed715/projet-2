@@ -41,3 +41,47 @@ def test_get_settings_is_memoized() -> None:
 def test_invalid_env_literal_rejected(bad_env: str) -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, env=bad_env)  # type: ignore[call-arg]
+
+
+def test_postgres_dsn_built_from_parts() -> None:
+    settings = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        postgres_host="db.internal",
+        postgres_port=5433,
+        postgres_db="jarvisdb",
+        postgres_user="jarvis_user",
+        postgres_password="s3cr3t",
+    )
+
+    assert settings.postgres_dsn == (
+        "postgresql+asyncpg://jarvis_user:s3cr3t@db.internal:5433/jarvisdb"
+    )
+
+
+def test_redis_url_built_from_parts() -> None:
+    settings = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        redis_host="cache.internal",
+        redis_port=6380,
+        redis_db=2,
+    )
+
+    assert settings.redis_url == "redis://cache.internal:6380/2"
+
+
+def test_postgres_and_redis_settings_are_unprefixed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("POSTGRES_HOST", "env-host")
+    monkeypatch.setenv("REDIS_PORT", "7000")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.postgres_host == "env-host"
+    assert settings.redis_port == 7000
+
+
+def test_llm_api_keys_default_to_none() -> None:
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.anthropic_api_key is None
+    assert settings.openai_api_key is None
+    assert settings.default_llm_provider == "anthropic"

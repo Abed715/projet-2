@@ -34,6 +34,30 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
+    # --- Postgres (unprefixed env vars, shared with plain `psql`/tooling) ---
+    postgres_host: str = Field("localhost", validation_alias="POSTGRES_HOST")
+    postgres_port: int = Field(5432, validation_alias="POSTGRES_PORT")
+    postgres_db: str = Field("jarvis", validation_alias="POSTGRES_DB")
+    postgres_user: str = Field("jarvis", validation_alias="POSTGRES_USER")
+    postgres_password: str = Field("jarvis", validation_alias="POSTGRES_PASSWORD")
+
+    # --- Redis ---
+    redis_host: str = Field("localhost", validation_alias="REDIS_HOST")
+    redis_port: int = Field(6379, validation_alias="REDIS_PORT")
+    redis_db: int = Field(0, validation_alias="REDIS_DB")
+
+    # --- ChromaDB ---
+    chroma_host: str = Field("localhost", validation_alias="CHROMA_HOST")
+    chroma_port: int = Field(8001, validation_alias="CHROMA_PORT")
+
+    # --- LLM providers ---
+    anthropic_api_key: str | None = Field(None, validation_alias="ANTHROPIC_API_KEY")
+    openai_api_key: str | None = Field(None, validation_alias="OPENAI_API_KEY")
+    ollama_base_url: str = Field(
+        "http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+    )
+    default_llm_provider: str = "anthropic"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:
@@ -44,6 +68,18 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def postgres_dsn(self) -> str:
+        """Async SQLAlchemy DSN (asyncpg driver)."""
+        return (
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def redis_url(self) -> str:
+        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
 
 @lru_cache
