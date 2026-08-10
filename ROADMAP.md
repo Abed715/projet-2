@@ -12,7 +12,7 @@ previous phase's modules have tests passing in CI.
 | 3 | `system`, `web`, Research Agent, Coding Agent | ✅ Done |
 | 4 | `automation`, `vision`, Automation Agent, Vision Agent | ✅ Done |
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ✅ Done |
-| 6 | `tasks` (queue/workers/scheduler), `plugins` | ⬜ Not started |
+| 6 | `tasks` (queue/workers/scheduler), `plugins` | ✅ Done |
 | 7 | `frontend` dashboard, `desktop` Electron shell | ⬜ Not started |
 | 8 | Hardening: perf, e2e tests, CI/CD image publishing, deployment docs | ⬜ Not started |
 
@@ -194,6 +194,38 @@ the Electron shell, Phase 7 — not the request/reply backend endpoint; see
 `voice/README.md`). Also deferred: an ElevenLabs `TTSProvider` adapter
 (optional cloud alternative to Piper per ARCHITECTURE.md §4, add when
 higher voice quality is actually needed).
+
+## Phase 6 checklist
+
+- [x] `tasks` module implemented: `Task`/`TaskStatus` model, `TaskStore`
+      (Postgres/SQLite via `core.db.Database`, mirrors
+      `memory.episodic.EpisodicStore`), `TaskQueue` (Redis Streams
+      consumer groups over a narrow `StreamLike` protocol, mirrors
+      `memory.short_term.RedisLike` — tested against `fakeredis`, which
+      fully supports Streams/consumer groups, no real Redis server),
+      `TaskEngine` (submit/run_once/pause/resume/cancel + a per-task-name
+      handler registry, with retry-until-`max_attempts` on handler
+      failure), `TaskWorker` (poll loop over `run_once`), `Scheduler`
+      (interval-based recurring submission — simplified "cron-like" per
+      ARCHITECTURE.md, no cron-expression parser added) — with unit tests
+- [x] `plugins` module implemented: `PluginManifest` (declarative
+      metadata only — not a trust boundary), `Plugin` protocol
+      (`manifest` + `register_tools(registry)`), `PluginLoader`
+      (register/load_all/list_plugins), `GitHubPlugin` (the one reference
+      plugin: public repo lookups via an injected `httpx.AsyncClient`,
+      tested against `httpx.MockTransport`) — with unit tests proving a
+      plugin's tool goes through the exact same `ToolRegistry`/
+      `PermissionEngine`/`AuditLog` path as any built-in module's tools,
+      with no plugin-specific security plumbing added
+
+Deferred out of Phase 6: exponential backoff on task retry, dead-letter
+handling beyond `FAILED` status, full cron expression syntax for
+`Scheduler`, a `jarvis.api` surface for submitting/inspecting tasks or
+managing plugins externally, Planner-to-Task-Engine delegation (this
+phase ships the engine, not its first caller — see `tasks/README.md`),
+and plugin discovery/hot-loading from disk (plugins are registered as
+already-instantiated objects; a manifest-file scanner/installer is a
+Phase 7 frontend-plugin-manager concern, see `plugins/README.md`).
 
 ## Definition of done (every phase)
 

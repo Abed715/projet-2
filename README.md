@@ -9,8 +9,8 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 5 done — Jarvis can research, code, control the
-> computer, see the screen, and talk.**
+> **Status: Phase 6 done — Jarvis can research, code, control the
+> computer, see the screen, talk, run background jobs, and load plugins.**
 > `core`, `security` (incl. a sandboxed subprocess executor), `memory`,
 > `brain` (Claude-backed LLM router, tool registry, and a real agentic
 > tool-use loop), `agents` (Coordinator/Planner/Reasoning for chat, plus
@@ -18,13 +18,15 @@ data flow, security model, tech stack rationale) and
 > `system` (sandboxed shell + workspace-confined file ops), `web` (fetch +
 > search, no API key required), `automation` (process management,
 > clipboard, notifications, keyboard/mouse control), `vision` (OCR, image
-> analysis, screen capture, window detection), and `voice` (Whisper STT,
-> Piper TTS, wake-word detection) are implemented and tested (240 tests,
-> `ruff`/`mypy --strict` clean). `WS /ws/chat` works end to end with
-> `ANTHROPIC_API_KEY` set; `WS /ws/voice` works once
+> analysis, screen capture, window detection), `voice` (Whisper STT,
+> Piper TTS, wake-word detection), `tasks` (Redis Streams job queue,
+> workers, interval scheduler, retry/pause/resume/cancel), and `plugins`
+> (manifest + loader + a working GitHub reference plugin) are implemented
+> and tested (274 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` works
+> end to end with `ANTHROPIC_API_KEY` set; `WS /ws/voice` works once
 > `JARVIS_PIPER_VOICE_MODEL_PATH` is set. Everything else in
 > `ARCHITECTURE.md` is designed but not yet built — see `ROADMAP.md` for
-> build order and what's next (Phase 6: `tasks` + `plugins`).
+> build order and what's next (Phase 7: `frontend` + `desktop`).
 
 ## Repository layout
 
