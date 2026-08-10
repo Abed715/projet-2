@@ -9,8 +9,9 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 6 done — Jarvis can research, code, control the
-> computer, see the screen, talk, run background jobs, and load plugins.**
+> **Status: Phase 7 done — Jarvis can research, code, control the
+> computer, see the screen, talk, run background jobs, load plugins, and
+> now has a dashboard and a desktop shell to talk to it through.**
 > `core`, `security` (incl. a sandboxed subprocess executor), `memory`,
 > `brain` (Claude-backed LLM router, tool registry, and a real agentic
 > tool-use loop), `agents` (Coordinator/Planner/Reasoning for chat, plus
@@ -22,11 +23,15 @@ data flow, security model, tech stack rationale) and
 > Piper TTS, wake-word detection), `tasks` (Redis Streams job queue,
 > workers, interval scheduler, retry/pause/resume/cancel), and `plugins`
 > (manifest + loader + a working GitHub reference plugin) are implemented
-> and tested (274 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` works
-> end to end with `ANTHROPIC_API_KEY` set; `WS /ws/voice` works once
-> `JARVIS_PIPER_VOICE_MODEL_PATH` is set. Everything else in
-> `ARCHITECTURE.md` is designed but not yet built — see `ROADMAP.md` for
-> build order and what's next (Phase 7: `frontend` + `desktop`).
+> and tested (274 backend tests, `ruff`/`mypy --strict` clean). `frontend`
+> (Next.js dashboard: live Chat page over `WS /ws/chat`, dark mode,
+> honest "coming soon" pages for the modules with no REST surface yet) and
+> `desktop` (Electron shell: tray icon, global shortcut, sandboxed
+> renderer) are implemented and tested too (18 frontend + 4 desktop
+> tests). `WS /ws/chat` works end to end with `ANTHROPIC_API_KEY` set;
+> `WS /ws/voice` works once `JARVIS_PIPER_VOICE_MODEL_PATH` is set.
+> Everything else in `ARCHITECTURE.md` is designed but not yet built —
+> see `ROADMAP.md` for build order and what's next (Phase 8: hardening).
 
 ## Repository layout
 
@@ -34,8 +39,9 @@ data flow, security model, tech stack rationale) and
 backend/    Python/FastAPI backend — one package per module (core, brain,
             memory, voice, vision, automation, web, system, plugins,
             security, api, agents, tasks)
-frontend/   Next.js dashboard (not yet started — Phase 7)
-desktop/    Electron shell (not yet started — Phase 7)
+frontend/   Next.js dashboard (Phase 7) — talks to the backend only via
+            its public REST/WebSocket API
+desktop/    Electron shell (Phase 7) — wraps the frontend build
 infra/      Dockerfiles, CI support files
 docs/       API docs, architecture diagrams
 ```
@@ -59,6 +65,26 @@ uvicorn jarvis.api.app:create_app --factory --reload
 #                                        ANTHROPIC_API_KEY for the reply — otherwise closes
 #                                        with code 1011 "voice not configured")
 ```
+
+## Quickstart (frontend + desktop)
+
+Requires Node.js 22+. Run alongside the backend above.
+
+```bash
+cd frontend
+npm install
+cp ../.env.example .env.local   # sets NEXT_PUBLIC_API_BASE_URL
+npm run dev                      # -> http://localhost:3000
+```
+
+```bash
+cd desktop
+npm install
+npm start   # builds + launches an Electron window loading the dashboard
+```
+
+See `frontend/README.md` and `desktop/README.md` for what's live vs.
+"coming soon" and why.
 
 ## Full stack (once later phases land)
 

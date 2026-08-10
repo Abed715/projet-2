@@ -13,7 +13,7 @@ previous phase's modules have tests passing in CI.
 | 4 | `automation`, `vision`, Automation Agent, Vision Agent | ✅ Done |
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ✅ Done |
 | 6 | `tasks` (queue/workers/scheduler), `plugins` | ✅ Done |
-| 7 | `frontend` dashboard, `desktop` Electron shell | ⬜ Not started |
+| 7 | `frontend` dashboard, `desktop` Electron shell | ✅ Done |
 | 8 | Hardening: perf, e2e tests, CI/CD image publishing, deployment docs | ⬜ Not started |
 
 ## Phase 0 checklist
@@ -226,6 +226,47 @@ phase ships the engine, not its first caller — see `tasks/README.md`),
 and plugin discovery/hot-loading from disk (plugins are registered as
 already-instantiated objects; a manifest-file scanner/installer is a
 Phase 7 frontend-plugin-manager concern, see `plugins/README.md`).
+
+## Phase 7 checklist
+
+- [x] `frontend` implemented: Next.js 16 (App Router) + TypeScript +
+      TailwindCSS v4 dashboard. Sidebar nav (Overview/Chat/Memory/Tasks/
+      Plugins/System), dark mode (custom `ThemeProvider` + pre-hydration
+      `ThemeScript`, no `next-themes` dependency needed for ~60 lines of
+      logic), `useChatSocket` (WebSocket hook wired to the real `WS
+      /ws/chat` endpoint — connection status, message history, send) —
+      the one live dashboard feature this phase ships, since it's the one
+      backend surface that actually exists to connect to. Memory/Tasks/
+      Plugins/System are honest "coming soon" pages, not fake data —
+      `jarvis.api` has no REST surface for those modules yet (see Phase 6
+      deferrals above). Unit tested (Vitest + React Testing Library, fake
+      `WebSocket` double — no real network calls), verified end-to-end in
+      a real browser against a live backend (`ruff`-equivalent: ESLint;
+      `mypy --strict`-equivalent: `tsc --noEmit`, both clean)
+- [x] `desktop` implemented: Electron shell loading the dashboard by URL
+      (`JARVIS_FRONTEND_URL`, defaults to `http://localhost:3000` in dev;
+      hard error in production with nothing configured, rather than a
+      silent wrong-URL fallback), `contextIsolation`/sandboxed renderer
+      with a minimal `preload.ts` bridge, tray icon (show/quit), global
+      shortcut (window show/hide toggle — explicitly not the voice wake
+      word, see `desktop/README.md`). `resolveAppUrl`'s decision logic
+      unit tested; full app lifecycle verified by an actual headless
+      launch (`Xvfb`) staying up against a live `next dev` server with no
+      errors
+- [x] CI: `frontend-ci.yml` (lint, type-check, test, build) and
+      `desktop-ci.yml` (type-check, test, build) added, mirroring
+      `backend-ci.yml`'s structure
+
+Deferred out of Phase 7: REST endpoints in `jarvis.api` for memory/tasks/
+plugins/system (blocks the corresponding dashboard panels — frontend work
+is done, backend surface isn't there yet), voice UI (mic capture/playback
+wired to `/ws/voice`), streaming token-by-token chat replies (inherited
+from `/ws/chat`'s own Phase 2 scope), packaged/installable Electron builds
+(`electron-builder`/`electron-forge`, code signing, auto-update — no
+target platform decided), global-shortcut-to-wake-word wiring (needs a
+continuous microphone-capture loop that doesn't exist on any client yet),
+and native desktop notifications (straightforward to add once there's a
+concrete event to notify about).
 
 ## Definition of done (every phase)
 
