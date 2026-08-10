@@ -9,15 +9,17 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the full design (module map,
 data flow, security model, tech stack rationale) and
 **[ROADMAP.md](./ROADMAP.md)** for what's built vs. planned.
 
-> **Status: Phase 2 done — real conversations work.** `core`, `security`,
-> `memory`, `brain` (Claude-backed LLM router, tool registry, conversation
-> engine), and `agents` (Coordinator, Planner, Reasoning) are implemented
-> and tested (111 tests, `ruff`/`mypy --strict` clean). `WS /ws/chat` is a
-> working streaming-chat endpoint — connect, send text, get a reply from
-> Claude with per-connection conversation memory. Everything else in
-> `ARCHITECTURE.md` is designed but not yet built — see `ROADMAP.md` for
-> build order and what's next (Phase 3: `system` + `web` + Research/Coding
-> agents).
+> **Status: Phase 3 done — Jarvis can research the web and edit code.**
+> `core`, `security` (incl. a sandboxed subprocess executor), `memory`,
+> `brain` (Claude-backed LLM router, tool registry, and a real agentic
+> tool-use loop), `agents` (Coordinator/Planner/Reasoning for chat, plus
+> Research/Coding agents that actually call tools), `system` (sandboxed
+> shell + workspace-confined file ops), and `web` (fetch + search, no API
+> key required) are implemented and tested (182 tests, `ruff`/`mypy
+> --strict` clean). `WS /ws/chat` works end to end with `ANTHROPIC_API_KEY`
+> set. Everything else in `ARCHITECTURE.md` is designed but not yet built —
+> see `ROADMAP.md` for build order and what's next (Phase 4: `automation` +
+> `vision`).
 
 ## Repository layout
 

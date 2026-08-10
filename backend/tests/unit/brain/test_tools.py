@@ -21,13 +21,13 @@ def registry(audit_log: InMemoryAuditLog) -> ToolRegistry:
     registry.register(
         ToolSpec(
             name="read_file", description="reads a file", risk_level=RiskLevel.SAFE,
-            handler=_echo_handler,
+            handler=_echo_handler, input_schema={"type": "object", "properties": {}},
         )
     )
     registry.register(
         ToolSpec(
             name="delete_file", description="deletes a file", risk_level=RiskLevel.DANGEROUS,
-            handler=_echo_handler,
+            handler=_echo_handler, input_schema={"type": "object", "properties": {}},
         )
     )
     return registry

@@ -3,10 +3,9 @@ tools, wired through `security`'s permission engine and audit log so every
 invocation is checked and logged before it runs. See ARCHITECTURE.md §3.1
 and §8.
 
-No domain tools are registered yet — `system`, `web`, `automation`, and
-`vision` (Phases 3-4) are the modules that will register real tools here.
-This module ships the plumbing ahead of them so agents built in this phase
-already go through the permission/audit path once tools exist.
+`system` and `web` (Phase 3) are the first modules to register real tools
+here, via their own `register_*_tools()` functions; `automation` and
+`vision` (Phase 4) follow the same pattern.
 """
 
 from __future__ import annotations
@@ -40,6 +39,7 @@ class ToolSpec:
     description: str
     risk_level: RiskLevel
     handler: ToolHandler
+    input_schema: dict[str, object]
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,6 +1,6 @@
 # jarvis.security
 
-**Status:** implemented (Phase 1).
+**Status:** implemented (Phase 1 spine + Phase 3 sandbox executor).
 
 Every dangerous action in the system is mediated here. Depends only on
 `jarvis.core`; no domain module (`memory`, `automation`, ...) may bypass it.
@@ -12,6 +12,7 @@ from jarvis.security import (
     Role, RiskLevel, role_permits,               # RBAC
     PermissionEngine, PermissionDecision, PermissionResult,  # permission engine
     AuditLog, AuditEntry, InMemoryAuditLog, SqlAuditLog, redact,  # audit log
+    SandboxExecutor, SandboxResult,                # subprocess isolation
     SecretsVault,                                 # encryption at rest
 )
 ```
@@ -35,6 +36,14 @@ from jarvis.security import (
 - **`SecretsVault`** — Fernet encryption keyed off `Settings.secret_key`
   (SHA-256-derived, so operators manage one secret, not two). Used to store
   plugin credentials and provider API keys at rest.
+- **`SandboxExecutor`** — runs shell commands as argv-only subprocesses
+  (never `shell=True`, so there is no shell-injection surface), confined to
+  a configured workspace directory, with a minimal explicit environment and
+  a timeout that kills the process. `jarvis.system`'s `ShellService`
+  (Phase 3) is the first consumer. This is **process-level isolation, not
+  OS-level sandboxing** — no namespaces, no seccomp, no container. That
+  boundary is deliberate: full OS sandboxing needs infrastructure this
+  module doesn't own (see Design notes).
 
 ## Design notes
 
@@ -45,6 +54,9 @@ from jarvis.security import (
 - `SqlAuditLog` and future Postgres-backed stores (`memory`'s episodic
   store) share `jarvis.core.db.Base`'s metadata — a single `create_all()`
   (dev) or Alembic migration (production) covers every module's tables.
-- Not yet implemented: the **Sandbox Executor** (subprocess isolation for
-  shell/plugin execution) — it lands with `jarvis.system` in Phase 3, since
-  it has nothing to sandbox until then.
+- `SandboxExecutor`'s isolation is deliberately scoped to what a pure-Python
+  component can guarantee without a container runtime: confinement to a
+  workspace directory, an explicit (not inherited) environment, and a
+  timeout. It does not restrict network access or provide filesystem
+  isolation beyond the workspace check — a fuller sandbox (containers,
+  seccomp) is future infrastructure work, not a gap in this module's logic.

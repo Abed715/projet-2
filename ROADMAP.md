@@ -9,7 +9,7 @@ previous phase's modules have tests passing in CI.
 | 0 | Repo scaffolding, `core`, minimal `api` boot | ✅ Done |
 | 1 | `security` spine, Postgres/Redis, `memory` (short-term + episodic + semantic) | ✅ Done |
 | 2 | `brain` (LLM router, tool registry), `agents` (Coordinator, Planner, Reasoning), `/ws/chat` | ✅ Done |
-| 3 | `system`, `web`, Research Agent, Coding Agent | ⬜ Not started |
+| 3 | `system`, `web`, Research Agent, Coding Agent | ✅ Done |
 | 4 | `automation`, `vision`, Automation Agent, Vision Agent | ⬜ Not started |
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ⬜ Not started |
 | 6 | `tasks` (queue/workers/scheduler), `plugins` | ⬜ Not started |
@@ -81,6 +81,46 @@ format is whole-message request/reply — the simplest thing that proves the
 stack end to end), and Research/Coding/Memory/Automation/Security/Vision
 agents (each wraps a domain module — `web`/`system`/`automation`/`vision`
 — that doesn't exist until Phases 3-4).
+
+## Phase 3 checklist
+
+- [x] `security` extended: `SandboxExecutor` (argv-only subprocess
+      execution confined to a workspace directory, minimal explicit env,
+      timeout — process-level isolation, not OS-level sandboxing; see
+      `security/README.md`) — with unit tests
+- [x] `brain` extended: `ToolSpec.input_schema` (JSON schema per tool, for
+      Claude's `tools` parameter), `ToolRunner` (hand-written agentic
+      tool-use loop — not the SDK's beta tool runner, since JARVIS's
+      confirmation semantics aren't something a generic runner knows
+      about; every tool call still goes through `ToolRegistry` for
+      permission + audit; `DANGEROUS` tools pending confirmation stop the
+      loop cleanly rather than guessing; `allowed_tools` scopes which
+      tools an agent can see and enforces it defense-in-depth) — with unit
+      tests against a fake Anthropic client (no real network calls)
+- [x] `system` module implemented: `FilesystemService` (path-traversal-safe,
+      workspace-confined read/write/list/move/delete), `ShellService`
+      (over `SandboxExecutor`), `register_system_tools` (`read_file`/
+      `list_dir` SAFE, `write_file`/`move_file` SENSITIVE, `delete_file`/
+      `run_shell_command` DANGEROUS) — with unit tests
+- [x] `web` module implemented: `parse_html` (dependency-free HTML → text/
+      table extraction via stdlib `html.parser`), `WebAgent` (`fetch` with
+      a best-effort SSRF guard, `search` delegating to a `SearchProvider`),
+      `DuckDuckGoSearchProvider` (no API key required), `register_web_tools`
+      (`web_search`/`web_fetch`, both SENSITIVE) — with unit tests against
+      `httpx.MockTransport` (no real network calls)
+- [x] `agents` extended: `ToolAgent` (system prompt + role + `ToolRunner`,
+      the tool-using counterpart to Phase 2's plain-chat `Agent`),
+      `create_research_agent` (scoped to `web_search`/`web_fetch`),
+      `create_coding_agent` (scoped to `system`'s file/shell tools) — with
+      unit tests
+
+Deferred out of Phase 3: wiring Research/Coding agents into `jarvis.api`
+(no REST/WS surface change was committed for this phase; they're usable
+directly and will get an API surface once Coordinator gains delegation),
+resuming a `ToolRunner` loop after a pending confirmation is granted (needs
+the task engine's pause/resume, Phase 6), and process management
+(open/close applications — waits on `automation`'s OS-level primitives,
+Phase 4).
 
 ## Definition of done (every phase)
 
