@@ -79,9 +79,22 @@ def test_postgres_and_redis_settings_are_unprefixed(monkeypatch: pytest.MonkeyPa
     assert settings.redis_port == 7000
 
 
-def test_llm_api_keys_default_to_none() -> None:
+def test_llm_api_keys_default_to_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Isolate from the ambient environment: some sandboxes/CI runners set
+    # ANTHROPIC_BASE_URL themselves for unrelated reasons.
+    monkeypatch.delenv("ANTHROPIC_BASE_URL", raising=False)
+
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
     assert settings.anthropic_api_key is None
+    assert settings.anthropic_base_url is None
     assert settings.openai_api_key is None
     assert settings.default_llm_provider == "anthropic"
+
+
+def test_anthropic_base_url_reads_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://localhost:9999")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.anthropic_base_url == "http://localhost:9999"

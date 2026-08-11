@@ -14,7 +14,7 @@ previous phase's modules have tests passing in CI.
 | 5 | `voice` (wake word, STT, TTS), `/ws/voice` | ✅ Done |
 | 6 | `tasks` (queue/workers/scheduler), `plugins` | ✅ Done |
 | 7 | `frontend` dashboard, `desktop` Electron shell | ✅ Done |
-| 8 | Hardening: perf, e2e tests, CI/CD image publishing, deployment docs | ⬜ Not started |
+| 8 | Hardening: perf, e2e tests, CI/CD image publishing, deployment docs | ✅ Done |
 
 ## Phase 0 checklist
 
@@ -267,6 +267,62 @@ target platform decided), global-shortcut-to-wake-word wiring (needs a
 continuous microphone-capture loop that doesn't exist on any client yet),
 and native desktop notifications (straightforward to add once there's a
 concrete event to notify about).
+
+## Phase 8 checklist
+
+- [x] **Dockerfiles hardened**: multi-stage `infra/docker/backend.Dockerfile`
+      (non-root user, no dev extras in the final image, `tesseract-ocr`/
+      `libgomp1` system deps for vision/voice, `HEALTHCHECK`) and a new
+      `infra/docker/frontend.Dockerfile` (Next.js `output: "standalone"`,
+      non-root, `HEALTHCHECK`). `docker-compose.yml` gained a `frontend`
+      service and the `api` service's dev-only source bind-mount was
+      removed (fights the now-immutable production image; use the bare
+      `uvicorn --reload` workflow for hot-reload dev instead). Real
+      `docker build` could not be executed in this project's own
+      development sandbox (its egress policy blocks Docker Hub's CDN —
+      see `docs/deployment.md`'s "What's verified vs. not"), so both
+      Dockerfiles were instead verified by careful manual review plus
+      directly running the exact runtime artifact each one packages
+      (the frontend's `.next/standalone/server.js`, run with plain
+      `node`, served every route correctly)
+- [x] **CI/CD image publishing**: `publish-images.yml` builds and pushes
+      `backend`/`frontend` images to GHCR on push to `main` and on `v*`
+      tags, via the standard `docker/build-push-action` + GHA layer
+      caching
+- [x] **Expanded e2e test suite**: `tests/e2e/` — a third test tier
+      alongside unit/integration, spawning a real `redis-server`
+      subprocess and a real `uvicorn` subprocess (the actual deployable
+      process, not `TestClient`), with a minimal fake HTTP server
+      standing in for Anthropic's API (`Settings.anthropic_base_url`,
+      added for exactly this). Proves the real ASGI server, real WS
+      handshake, and real Redis-backed session persistence work
+      end-to-end across a two-turn conversation, plus `/ws/voice`'s
+      "not configured" close path over a real socket. Excluded from the
+      default `pytest` run (slow; real subprocess startup per test) —
+      runs as its own CI job and via `make e2e`
+- [x] **Perf/load smoke test**: `backend/scripts/perf_smoke.py`, a
+      standalone script (not test-suite/CI-gated — perf numbers are
+      environment-dependent) that load-tests `GET /health` and
+      (optionally) `WS /ws/chat` against an already-running backend,
+      reporting throughput and latency percentiles. Verified against a
+      real backend process in this sandbox (500 req/s, p99 133ms for
+      `/health`; 142 turns/s, p99 74ms for `/ws/chat` — sandbox-specific
+      numbers, not a performance claim about any other environment)
+- [x] **Deployment docs**: `docs/deployment.md` — Docker Compose (the
+      primary, cross-platform path), using published GHCR images, and
+      native/no-Docker instructions for Linux/Windows/macOS, each noting
+      where `automation`/`vision`'s OS-level backends are Linux/X11-only
+      today (per those modules' own READMEs) rather than glossing over it
+
+Deferred out of Phase 8: a calibrated/repeatable perf benchmark suite with
+tracked baselines (this phase ships a smoke-test tool, not a performance
+regression-tracking system); real `docker build` verification (blocked by
+this development sandbox's registry access, not by anything in the
+Dockerfiles themselves — the next real CI run of `publish-images.yml` is
+the first real build); Windows/macOS-native
+`automation`/`vision` backends (notifications, window listing — Linux/X11
+only today); and a packaged/installable Electron build (still Phase 7's
+gap, not newly introduced here).
 
 ## Definition of done (every phase)
 

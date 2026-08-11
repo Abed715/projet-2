@@ -52,6 +52,11 @@ class Settings(BaseSettings):
 
     # --- LLM providers ---
     anthropic_api_key: str | None = Field(None, validation_alias="ANTHROPIC_API_KEY")
+    # Overrides the Anthropic SDK's default API host. Real uses: a
+    # self-hosted proxy, an on-prem gateway. Also what makes an
+    # out-of-process e2e test possible without a real Anthropic API key —
+    # see tests/e2e/conftest.py.
+    anthropic_base_url: str | None = Field(None, validation_alias="ANTHROPIC_BASE_URL")
     openai_api_key: str | None = Field(None, validation_alias="OPENAI_API_KEY")
     ollama_base_url: str = Field(
         "http://localhost:11434", validation_alias="OLLAMA_BASE_URL"

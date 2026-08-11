@@ -1,4 +1,4 @@
-.PHONY: install lint typecheck test check dev up down
+.PHONY: install lint typecheck test e2e perf check dev up down
 
 install:
 	cd backend && pip install -e ".[dev]"
@@ -11,6 +11,12 @@ typecheck:
 
 test:
 	cd backend && pytest
+
+e2e:
+	cd backend && pytest tests/e2e -m e2e -v
+
+perf:
+	cd backend && python scripts/perf_smoke.py
 
 check: lint typecheck test
 

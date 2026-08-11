@@ -62,7 +62,9 @@ def _build_default_coordinator(settings: Settings) -> Agent:
     memory = ShortTermMemory(cast(RedisLike, redis_client))
 
     router = LLMRouter()
-    claude_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    claude_client = anthropic.AsyncAnthropic(
+        api_key=settings.anthropic_api_key, base_url=settings.anthropic_base_url
+    )
     router.register(
         "anthropic", ClaudeProvider(claude_client, model=settings.anthropic_model)
     )
